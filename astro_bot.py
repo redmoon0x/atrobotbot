@@ -22,6 +22,12 @@ class AstroBot:
         self.voice_handler = VoiceHandler()
         self.setup_handlers()
         
+        # Add webhook mode if URL is provided
+        self.webhook_url = os.getenv("WEBHOOK_URL")
+        if self.webhook_url:
+            self.bot.remove_webhook()
+            self.bot.set_webhook(url=self.webhook_url)
+        
     def setup_handlers(self):
         @self.bot.message_handler(commands=['start'])
         def start_command(message):
@@ -102,7 +108,9 @@ class AstroBot:
                 self.bot.reply_to(message, "I had trouble with that audio message. Could you try again? 🎤")
 
     def run(self):
-        self.bot.infinity_polling()
+        if not self.webhook_url:
+            self.bot.infinity_polling()
+        # If webhook_url is set, the bot will handle updates through the webhook
 
 def main():
     bot = AstroBot()
