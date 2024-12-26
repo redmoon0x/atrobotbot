@@ -3,4 +3,7 @@ google-generativeai
 python-dotenv
 feedparser
 edge-tts
+pyttsx3
 requests
+SpeechRecognition
+pydub

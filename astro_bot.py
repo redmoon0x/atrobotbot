@@ -42,24 +42,12 @@ class AstroBot:
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
             try:
-                # Get text response
+                # Get and send text response only
                 response = self.personality.get_response(message.text)
-                
-                # Send text response
                 self.bot.reply_to(message, response)
-                
-                # Convert to speech and send as voice
-                audio_content = self.voice_handler.text_to_speech(response)
-                if audio_content:
-                    self.bot.send_voice(
-                        message.chat.id,
-                        audio_content,
-                        reply_to_message_id=message.message_id,
-                        caption="🗣️"
-                    )
             except Exception as e:
                 print(f"Message handling error: {str(e)}")
-                self.bot.reply_to(message, "Oops! My voice isn't working right now! 🎤")
+                self.bot.reply_to(message, "Oops! Something went wrong! 😅")
 
         @self.bot.message_handler(content_types=['photo'])
         def handle_photo(message):
@@ -87,29 +75,31 @@ class AstroBot:
         @self.bot.message_handler(content_types=['voice', 'audio'])
         def handle_audio(message):
             try:
-                # Get file info
+                # Get file info and content
                 file_info = self.bot.get_file(message.voice.file_id if hasattr(message, 'voice') else message.audio.file_id)
                 file_url = f"https://api.telegram.org/file/bot{os.getenv('TELEGRAM_TOKEN')}/{file_info.file_path}"
-                
-                # Download file content
                 audio_content = requests.get(file_url).content
                 
-                # Process with personality (now directly sends to Gemini)
+                # Get clean response without emojis for voice
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                response = loop.run_until_complete(
-                    self.personality.process_media(
-                        audio_content,
-                        "audio/ogg" if hasattr(message, 'voice') else "audio/mpeg"
-                    )
+                voice_response = loop.run_until_complete(
+                    self.personality.process_media(audio_content, "audio/mpeg", True)
                 )
                 loop.close()
                 
-                self.bot.reply_to(message, response)
+                # Generate and send only voice response
+                audio_content = self.voice_handler.text_to_speech(voice_response)
+                if audio_content:
+                    self.bot.send_voice(
+                        message.chat.id,
+                        audio_content,
+                        reply_to_message_id=message.message_id
+                    )
                 
             except Exception as e:
-                print(f"Audio error: {str(e)}")  # For debugging
-                self.bot.reply_to(message, "I had trouble processing that audio. Could you try again? 🎤")
+                print(f"Audio error: {str(e)}")
+                self.bot.reply_to(message, "I had trouble with that audio message. Could you try again? 🎤")
 
     def run(self):
         self.bot.infinity_polling()
