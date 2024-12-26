@@ -9,6 +9,7 @@ from personality import AstroboyPersonality
 from news_fetcher import NewsFetcher
 from dotenv import load_dotenv
 from voice_handler import VoiceHandler
+import logging
 
 # Load environment variables
 load_dotenv()
@@ -20,14 +21,28 @@ class AstroBot:
         self.news_fetcher = NewsFetcher()
         self.recognizer = sr.Recognizer()
         self.voice_handler = VoiceHandler()
+        
+        # Configure webhook
+        self.webhook_url = "https://astrobot-5oql.onrender.com/"
+        self.configure_webhook()
+        
         self.setup_handlers()
-        
-        # Add webhook mode if URL is provided
-        self.webhook_url ="https://astrobot-5oql.onrender.com"
-        if self.webhook_url:
+    
+    def configure_webhook(self):
+        """Configure webhook for the bot"""
+        try:
+            # Remove existing webhook
             self.bot.remove_webhook()
-            self.bot.set_webhook(url=self.webhook_url)
-        
+            
+            # Set new webhook
+            self.bot.set_webhook(
+                url=f"{self.webhook_url}/",
+                max_connections=100
+            )
+            logging.info(f"Webhook set to {self.webhook_url}")
+        except Exception as e:
+            logging.error(f"Failed to set webhook: {str(e)}")
+    
     def setup_handlers(self):
         @self.bot.message_handler(commands=['start'])
         def start_command(message):
@@ -108,9 +123,8 @@ class AstroBot:
                 self.bot.reply_to(message, "I had trouble with that audio message. Could you try again? 🎤")
 
     def run(self):
-        if not self.webhook_url:
-            self.bot.infinity_polling()
-        # If webhook_url is set, the bot will handle updates through the webhook
+        # In webhook mode, we don't need to run anything here
+        pass
 
 def main():
     bot = AstroBot()
