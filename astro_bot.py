@@ -23,7 +23,7 @@ class AstroBot:
         self.setup_handlers()
         
         # Add webhook mode if URL is provided
-        self.webhook_url = os.getenv("WEBHOOK_URL")
+        self.webhook_url ="https://astrobot-5oql.onrender.com"
         if self.webhook_url:
             self.bot.remove_webhook()
             self.bot.set_webhook(url=self.webhook_url)
